@@ -5,7 +5,7 @@ import torch
 
 
 class Config():
-    exp_name = "2.origin"
+    exp_name = "3.origin"
     savedir = "../expriment/"+exp_name+"/"
     
     
@@ -44,10 +44,15 @@ class Config():
         n_sog_embd = 128
         n_cog_embd = 128
     
-        lat_min = 55.5
-        lat_max = 58.0
-        lon_min = 10.3
-        lon_max = 13
+#         lat_min = 55.5
+#         lat_max = 58.0
+#         lon_min = 10.3
+#         lon_max = 13
+        
+        lat_min = -90
+        lat_max = 90
+        lon_min = -180
+        lon_max = 180
 
     
     #===========================================================================

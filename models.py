@@ -170,6 +170,10 @@ class TrAISformer(nn.Module):
         # transformer
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         
+#         self.enc_past = nn.Sequential(*[Block(config) for _ in range(2)])
+#         self.enc_dest = nn.Sequential(*[Block(config) for _ in range(2)])
+#         self.enc_latent = nn.Sequential(*[Block(config) for _ in range(2)])
+#         self.decoder = nn.Sequential(*[Block(config) for _ in range(2)])
         
         # decoder head
         self.ln_f = nn.LayerNorm(config.n_embd)
@@ -269,17 +273,6 @@ class TrAISformer(nn.Module):
     
     
     def forward(self, x, masks = None, with_targets=False, return_loss_tuple=False):
-        """
-        Args:
-            x: a Tensor of size (batchsize, seqlen, 4). x has been truncated 
-                to [0,1).
-            masks: a Tensor of the same size of x. masks[idx] = 0. if 
-                x[idx] is a padding.
-            with_targets: if True, inputs = x[:,:-1,:], targets = x[:,1:,:], 
-                otherwise inputs = x.
-        Returns: 
-            logits, loss
-        """
 
         if self.mode in ("mlp_pos","mlp",):
             idxs, idxs_uniform = x, x # use the real-values of x.
@@ -290,9 +283,6 @@ class TrAISformer(nn.Module):
         if with_targets:
             inputs = idxs[:,:-1,:].contiguous()
             targets = idxs[:,1:,:].contiguous()
-            targets_uniform = idxs_uniform[:,1:,:].contiguous()
-            inputs_real = x[:,:-1,:].contiguous()
-            targets_real = x[:,1:,:].contiguous()
         else:
             inputs_real = x
             inputs = idxs
