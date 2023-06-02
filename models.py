@@ -104,19 +104,15 @@ class TrAISformer(nn.Module):
 
         self.lat_size = config.lat_size
         self.lon_size = config.lon_size
-        self.sog_size = config.sog_size
-        self.cog_size = config.cog_size
         self.full_size = config.full_size
         self.n_lat_embd = config.n_lat_embd
         self.n_lon_embd = config.n_lon_embd
-        self.n_sog_embd = config.n_sog_embd
-        self.n_cog_embd = config.n_cog_embd
         self.register_buffer(
             "att_sizes", 
-            torch.tensor([config.lat_size, config.lon_size, config.sog_size, config.cog_size]))
+            torch.tensor([config.lat_size, config.lon_size]))
         self.register_buffer(
             "emb_sizes", 
-            torch.tensor([config.n_lat_embd, config.n_lon_embd, config.n_sog_embd, config.n_cog_embd]))
+            torch.tensor([config.n_lat_embd, config.n_lon_embd]))
         
         if hasattr(config,"partition_mode"):
             self.partition_mode = config.partition_mode
@@ -160,8 +156,6 @@ class TrAISformer(nn.Module):
         # Passing from the 4-D space to a high-dimentional space
         self.lat_emb = nn.Embedding(self.lat_size, config.n_lat_embd)
         self.lon_emb = nn.Embedding(self.lon_size, config.n_lon_embd)
-        self.sog_emb = nn.Embedding(self.sog_size, config.n_sog_embd)
-        self.cog_emb = nn.Embedding(self.cog_size, config.n_cog_embd)
             
             
         self.pos_emb = nn.Parameter(torch.zeros(1, config.max_seqlen, config.n_embd))
@@ -273,7 +267,6 @@ class TrAISformer(nn.Module):
     
     
     def forward(self, x, masks = None, with_targets=False, return_loss_tuple=False):
-
         if self.mode in ("mlp_pos","mlp",):
             idxs, idxs_uniform = x, x # use the real-values of x.
         else:            
@@ -293,10 +286,8 @@ class TrAISformer(nn.Module):
 
         # forward the GPT model
         lat_embeddings = self.lat_emb(inputs[:,:,0]) # (bs, seqlen, lat_size)
-        lon_embeddings = self.lon_emb(inputs[:,:,1]) 
-        sog_embeddings = self.sog_emb(inputs[:,:,2]) 
-        cog_embeddings = self.cog_emb(inputs[:,:,3])      
-        token_embeddings = torch.cat((lat_embeddings, lon_embeddings, sog_embeddings, cog_embeddings),dim=-1)
+        lon_embeddings = self.lon_emb(inputs[:,:,1])     
+        token_embeddings = torch.cat((lat_embeddings, lon_embeddings),dim=-1)
             
         
         position_embeddings = self.pos_emb[:, :seqlen, :] # each position maps to a (learnable) vector (1, seqlen, n_embd)
@@ -305,20 +296,13 @@ class TrAISformer(nn.Module):
         fea = self.ln_f(fea) # (bs, seqlen, n_embd)
         logits = self.head(fea) # (bs, seqlen, full_size) or (bs, seqlen, n_embd)
         
-        lat_logits, lon_logits, sog_logits, cog_logits =\
-            torch.split(logits, (self.lat_size, self.lon_size, self.sog_size, self.cog_size), dim=-1)
+        lat_logits, lon_logits =\
+            torch.split(logits, (self.lat_size, self.lon_size), dim=-1)
         
         # Calculate the loss
         loss = None
         loss_tuple = None
         if targets is not None:
-
-            sog_loss = F.cross_entropy(sog_logits.view(-1, self.sog_size), 
-                                       targets[:,:,2].view(-1), 
-                                       reduction="none").view(batchsize,seqlen)
-            cog_loss = F.cross_entropy(cog_logits.view(-1, self.cog_size), 
-                                       targets[:,:,3].view(-1), 
-                                       reduction="none").view(batchsize,seqlen)
             lat_loss = F.cross_entropy(lat_logits.view(-1, self.lat_size), 
                                        targets[:,:,0].view(-1), 
                                        reduction="none").view(batchsize,seqlen)
@@ -329,14 +313,10 @@ class TrAISformer(nn.Module):
             if self.blur:
                 lat_probs = F.softmax(lat_logits, dim=-1) 
                 lon_probs = F.softmax(lon_logits, dim=-1)
-                sog_probs = F.softmax(sog_logits, dim=-1)
-                cog_probs = F.softmax(cog_logits, dim=-1)
 
                 for _ in range(self.blur_n):
                     blurred_lat_probs = self.blur_module(lat_probs.reshape(-1,1,self.lat_size)).reshape(lat_probs.shape)
                     blurred_lon_probs = self.blur_module(lon_probs.reshape(-1,1,self.lon_size)).reshape(lon_probs.shape)
-                    blurred_sog_probs = self.blur_module(sog_probs.reshape(-1,1,self.sog_size)).reshape(sog_probs.shape)
-                    blurred_cog_probs = self.blur_module(cog_probs.reshape(-1,1,self.cog_size)).reshape(cog_probs.shape)
 
                     blurred_lat_loss = F.nll_loss(blurred_lat_probs.view(-1, self.lat_size),
                                                   targets[:,:,0].view(-1),
@@ -344,25 +324,15 @@ class TrAISformer(nn.Module):
                     blurred_lon_loss = F.nll_loss(blurred_lon_probs.view(-1, self.lon_size),
                                                   targets[:,:,1].view(-1),
                                                   reduction="none").view(batchsize,seqlen)
-                    blurred_sog_loss = F.nll_loss(blurred_sog_probs.view(-1, self.sog_size),
-                                                  targets[:,:,2].view(-1),
-                                                  reduction="none").view(batchsize,seqlen)
-                    blurred_cog_loss = F.nll_loss(blurred_cog_probs.view(-1, self.cog_size),
-                                                  targets[:,:,3].view(-1),
-                                                  reduction="none").view(batchsize,seqlen)
 
                     lat_loss += self.blur_loss_w*blurred_lat_loss
                     lon_loss += self.blur_loss_w*blurred_lon_loss
-                    sog_loss += self.blur_loss_w*blurred_sog_loss
-                    cog_loss += self.blur_loss_w*blurred_cog_loss
 
                     lat_probs = blurred_lat_probs
                     lon_probs = blurred_lon_probs
-                    sog_probs = blurred_sog_probs
-                    cog_probs = blurred_cog_probs
                     
 
-            loss_tuple = (lat_loss, lon_loss, sog_loss, cog_loss)
+            loss_tuple = (lat_loss, lon_loss)
             loss = sum(loss_tuple)
         
             if masks is not None:

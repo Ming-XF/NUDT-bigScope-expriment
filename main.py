@@ -106,8 +106,8 @@ if __name__ == "__main__":
     # Load the best model
     model.load_state_dict(torch.load(cf.ckpt_path))
 
-    v_ranges = torch.tensor([2, 3, 0, 0]).to(cf.device)
-    v_roi_min = torch.tensor([model.lat_min, -7, 0, 0]).to(cf.device)
+    v_ranges = torch.tensor([2, 3,]).to(cf.device)
+    v_roi_min = torch.tensor([model.lat_min, -7]).to(cf.device)
     max_seqlen = init_seqlen + 6 * 4
 
     model.eval()
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     pbar = tqdm(enumerate(aisdls["test"]), total=len(aisdls["test"]))
     with torch.no_grad():
         for it, (seqs, masks, seqlens, mmsis, time_starts) in pbar:
-            seqs_init = seqs[:, :init_seqlen, :].to(cf.device)
+            seqs_init = seqs[:, :init_seqlen, :2].to(cf.device)
             masks = masks[:, :max_seqlen].to(cf.device)
             batchsize = seqs.shape[0]
             error_ens = torch.zeros((batchsize, max_seqlen - cf.init_seqlen, cf.n_samples)).to(cf.device)
@@ -129,7 +129,7 @@ if __name__ == "__main__":
                                         r_vicinity=cf.r_vicinity,
                                         top_k=cf.top_k)
                 inputs = seqs[:, :max_seqlen, :].to(cf.device)
-                input_coords = (inputs * v_ranges + v_roi_min) * torch.pi / 180
+                input_coords = (inputs[:, :, :2] * v_ranges + v_roi_min) * torch.pi / 180
                 pred_coords = (preds * v_ranges + v_roi_min) * torch.pi / 180
                 d = utils.haversine(input_coords, pred_coords) * masks
                 error_ens[:, :, i_sample] = d[:, cf.init_seqlen:]

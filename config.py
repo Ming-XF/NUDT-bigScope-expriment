@@ -5,7 +5,7 @@ import torch
 
 
 class Config():
-    exp_name = "3.origin"
+    exp_name = "test"
     savedir = "../expriment/"+exp_name+"/"
     
     
@@ -44,15 +44,15 @@ class Config():
         n_sog_embd = 128
         n_cog_embd = 128
     
-#         lat_min = 55.5
-#         lat_max = 58.0
-#         lon_min = 10.3
-#         lon_max = 13
+        lat_min = 55.5
+        lat_max = 58.0
+        lon_min = 10.3
+        lon_max = 13
         
-        lat_min = -90
-        lat_max = 90
-        lon_min = -180
-        lon_max = 180
+#         lat_min = -90
+#         lat_max = 90
+#         lon_min = -180
+#         lon_max = 180
 
     
     #===========================================================================
@@ -78,8 +78,8 @@ class Config():
     #===================================================
     n_head = 8
     n_layer = 8
-    full_size = lat_size + lon_size + sog_size + cog_size
-    n_embd = n_lat_embd + n_lon_embd + n_sog_embd + n_cog_embd
+    full_size = lat_size + lon_size
+    n_embd = n_lat_embd + n_lon_embd
     # base GPT config, params common to all GPT versions
     embd_pdrop = 0.1
     resid_pdrop = 0.1

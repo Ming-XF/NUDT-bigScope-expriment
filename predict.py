@@ -47,6 +47,7 @@ class Prediction():
         seqs = (seqs - self.v_roi_min) / self.v_ranges
         with torch.no_grad():
             seqs_init = torch.tensor(seqs).to(cf.device)
+            pdb.set_trace()
             preds = trainers.sample(self.model,
                                     seqs_init,
                                     predict_len,
@@ -62,7 +63,7 @@ class Prediction():
 
 if __name__ == "__main__":
     
-    expriment_name = "1.origin"
+    expriment_name = "1.origin_without_"
     
     data_path = "../data/ct_dma/ct_dma_test.pkl"
     model_path = "../expriment/" + expriment_name +"/model.pt"
