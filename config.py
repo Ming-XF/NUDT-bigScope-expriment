@@ -5,17 +5,18 @@ import torch
 
 
 class Config():
-    exp_name = "5.pretrain"
+    exp_name = "6.pretrain-ship"
     savedir = "../expriment/"+exp_name+"/"
     
-    
-    dataset_name = "pretrain"
+    dataset_name = "ship"
     # Data flags
     #===================================================
     datadir = f"../data/{dataset_name}"
-    trainset_name = f"pretrain_train.pkl"
-    validset_name = f"pretrain_valid.pkl"
-    testset_name = f"pretrain_test.pkl"
+    trainset_name = f"ship_train.pkl"
+    validset_name = f"ship_valid.pkl"
+    testset_name = f"ship_test.pkl"
+    
+    pretrain_path = "../expriment/5.pretrain/model.pt"
     
     retrain = True
     tb_log = False
@@ -29,7 +30,7 @@ class Config():
     max_seqlen = 120
     min_seqlen = 20
     
-    if dataset_name == "pretrain": #==============================
+    if dataset_name == "pretrain" or dataset_name == "ship" or dataset_name == "fly": #==============================
    
         # When mode == "grad" or "pos_grad", sog and cog are actually dlat and 
         # dlon    

@@ -35,8 +35,11 @@ class Prediction():
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
         
-        self.v_ranges = np.array([self.model.lat_max - self.model.lat_min, self.model.lon_max - self.model.lon_min, 30, 360])
-        self.v_roi_min = np.array([self.model.lat_min, self.model.lon_min, 0, 0])
+        # self.v_ranges = np.array([self.model.lat_max - self.model.lat_min, self.model.lon_max - self.model.lon_min, 30, 360])
+        # self.v_roi_min = np.array([self.model.lat_min, self.model.lon_min, 0, 0])
+        
+        self.v_ranges = np.array([cf.lat_max-cf.lat_min, cf.lon_max-cf.lon_min, cf.sog_max, 360])
+        self.v_roi_min = np.array([cf.lat_min, cf.lon_min, 0, 0]).to(cf.device)
 
 
     def predict(self, history, predict_len=50):
@@ -62,7 +65,7 @@ class Prediction():
 
 if __name__ == "__main__":
     
-    expriment_name = "1.origin"
+    expriment_name = "6.pretrain-ship"
     
     data_path = "../data/ct_dma/ct_dma_test.pkl"
     model_path = "../expriment/" + expriment_name +"/model.pt"

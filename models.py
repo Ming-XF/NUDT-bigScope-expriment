@@ -273,7 +273,6 @@ class TrAISformer(nn.Module):
     
     
     def forward(self, x, masks = None, with_targets=False, return_loss_tuple=False):
-
         if self.mode in ("mlp_pos","mlp",):
             idxs, idxs_uniform = x, x # use the real-values of x.
         else:            
@@ -312,7 +311,7 @@ class TrAISformer(nn.Module):
         loss = None
         loss_tuple = None
         if targets is not None:
-
+            
             sog_loss = F.cross_entropy(sog_logits.view(-1, self.sog_size), 
                                        targets[:,:,2].view(-1), 
                                        reduction="none").view(batchsize,seqlen)
@@ -324,7 +323,7 @@ class TrAISformer(nn.Module):
                                        reduction="none").view(batchsize,seqlen)
             lon_loss = F.cross_entropy(lon_logits.view(-1, self.lon_size), 
                                        targets[:,:,1].view(-1), 
-                                       reduction="none").view(batchsize,seqlen)                     
+                                       reduction="none").view(batchsize,seqlen)   
 
             if self.blur:
                 lat_probs = F.softmax(lat_logits, dim=-1) 

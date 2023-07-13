@@ -56,14 +56,15 @@ if __name__ == "__main__":
     for phase, filename in zip(("train", "valid", "test"), l_pkl_filenames):
         datapath = os.path.join(cf.datadir, filename)
         print(f"Loading {datapath}...")
+        
         with open(datapath, "rb") as f:
             l_pred_errors = pickle.load(f)
-        for V in l_pred_errors:
-            try:
-                moving_idx = np.where(V["traj"][:, 2] > moving_threshold)[0][0]
-            except:
-                moving_idx = len(V["traj"]) - 1  # This track will be removed
-            V["traj"] = V["traj"][moving_idx:, :]
+        # for V in l_pred_errors:
+        #     try:
+        #         moving_idx = np.where(V["traj"][:, 2] > moving_threshold)[0][0]
+        #     except:
+        #         moving_idx = len(V["traj"]) - 1  # This track will be removed
+        #     V["traj"] = V["traj"][moving_idx:, :]
         Data[phase] = [x for x in l_pred_errors if not np.isnan(x["traj"]).any() and len(x["traj"]) > cf.min_seqlen]
         print(len(l_pred_errors), len(Data[phase]))
         print(f"Length: {len(Data[phase])}")
@@ -90,6 +91,12 @@ if __name__ == "__main__":
     ## Model
     # ===============================
     model = models.TrAISformer(cf, partition_model=None)
+    
+    ## finetune
+    # ===============================
+    if cf.pretrain_path:
+        print("预训练微调：加载预训练模型")
+        model.load_state_dict(torch.load(cf.pretrain_path))
 
     ## Trainer
     # ===============================
